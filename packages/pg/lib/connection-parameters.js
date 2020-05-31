@@ -70,6 +70,7 @@ var ConnectionParameters = function (config) {
   })
 
   this.binary = val('binary', config)
+  this.options = val('options', config)
 
   this.ssl = typeof config.ssl === 'undefined' ? readSSLConfigFromEnvironment() : config.ssl
 
@@ -118,6 +119,17 @@ var add = function (params, config, paramName) {
   }
 }
 
+var escapeOptionValue = function (value) {
+  return ('' + value).replace(/\\/g, '\\\\').replace(/ /g, '\\ ')
+}
+
+var addOption = function (options, config, optionName) {
+  var value = config[optionName]
+  if (value !== undefined && value !== null) {
+    options.push('-c ' + optionName + '=' + escapeOptionValue(value))
+  }
+}
+
 ConnectionParameters.prototype.getLibpqConnectionString = function (cb) {
   var params = []
   add(params, this, 'user')
@@ -143,6 +155,15 @@ ConnectionParameters.prototype.getLibpqConnectionString = function (cb) {
   if (this.host) {
     params.push('host=' + quoteParamValue(this.host))
   }
+  var options = []
+  if (this.options && typeof this.options === 'string') {
+    options.push(this.options)
+  }
+  addOption(options, this, 'statement_timeout')
+  if (options.length > 0) {
+    params.push('options=' + quoteParamValue(options.join(' ')))
+  }
+
   if (this.isDomainSocket) {
     return cb(null, params.join(' '))
   }

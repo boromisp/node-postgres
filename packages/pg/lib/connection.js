@@ -89,7 +89,13 @@ Connection.prototype.connect = function (port, host) {
     if (net.isIP(host) === 0) {
       options.servername = host
     }
-    self.stream = tls.connect(options)
+    try {
+      self.stream = tls.connect(options)
+    } catch (error) {
+      reportStreamError(error)
+      this.emit('end')
+      return
+    }
     self.attachListeners(self.stream)
     self.stream.on('error', reportStreamError)
 
